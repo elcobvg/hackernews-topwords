@@ -1,0 +1,23 @@
+{
+  "name": "hackernews-topwords",
+  "version": "0.1.0",
+  "description": "Node demo app getting the top-10 most used words of Hackernews titles",
+  "main": "index.js",
+  "keywords": [],
+  "author": "Elco Brouwer von Gonzenbach <elco.brouwer@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elcobvg/hackernews-topwords.git"
+  },
+  "scripts": {
+    "lint": "standard *.js --fix",
+    "dev": "NODE_ENV=development nodemon index.js",
+    "start": "NODE_ENV=production node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "axios": "0.17.1",
+    "express": "4.16.2"
+  }
+}
