@@ -42,19 +42,17 @@ app.get('/top-words', async (req, res) => {
     const stories = await Promise.all(requests)
 
     // Get all the words from the titles
-    const titles = stories.map((story) => {
-      return story.data.title.toLowerCase().split(' ')
-    })
-    const words = titles.reduce((acc, cur) => acc.concat(cur), [])
+    const words = stories.reduce((arr, story) => {
+      return arr.concat(story.data.title.toLowerCase().split(' '))
+    }, [])
 
     // Build hash table of indvidual words, exclude the stopwords
-    let i = words.length
     const wordsMap = {}
-    while (i--) {
-      if (wordsMap[words[i]] === undefined && !stopwords.includes(words[i])) {
-        wordsMap[words[i]] = 0
+    let word
+    while (word = words.shift()) {
+      if (!stopwords.includes(word)) {
+        wordsMap[word] = (wordsMap[word] || 0) + 1
       }
-      wordsMap[words[i]]++
     }
 
     // Sort the keys, i.e. the words & return the top 10
