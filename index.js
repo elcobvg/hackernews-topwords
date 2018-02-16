@@ -12,12 +12,15 @@ const stopwords = [
   'a',
   'an',
   'and',
+  'as',
+  'at',
   'be',
   'by',
   'for',
   'from',
   'hn:',
   'how',
+  'i',
   'in',
   'is',
   'it',
@@ -34,28 +37,56 @@ const stopwords = [
 
 app.get('/top-words', async (req, res) => {
   try {
-    // Get latest stories
+    // Get latest 500 stories
     const ids = await api.get('newstories.json')
     const requests = ids.data.map((id) => {
       return api.get(`item/${id}.json`)
     })
-    const stories = await Promise.all(requests)
+    let stories = await Promise.all(requests)
 
-    // Get all the words from the titles
-    const words = stories.reduce((arr, story) => {
-      return arr.concat(story.data.title.toLowerCase().split(' '))
-    }, [])
+    // Get the next 100 stories
+    const targetNum = stories.length + 100
+    let id = ids.data.pop() - 1 // Count down from last ID
 
-    // Build hash table of indvidual words, exclude the stopwords
-    const wordsMap = {}
-    let word
-    while (word = words.shift()) {
-      if (!stopwords.includes(word)) {
-        wordsMap[word] = (wordsMap[word] || 0) + 1
+    // Get items in chunks of 100 concurrent requests
+    while (stories.length < targetNum) {
+      let numRequests = 100
+      const extraRequests = []
+      while (numRequests--) {
+        extraRequests.push(api.get(`item/${id}.json`))
+        id--
+      }
+      const items = await Promise.all(extraRequests)
+
+      // Filter out the stories
+      const extraStories = items.filter((item) => {
+        return item.data.type === 'story'
+      })
+
+      // Append stories
+      if (extraStories.length < (targetNum - stories.length)) {
+        stories = stories.concat(extraStories)
+      } else {
+        stories = stories.concat(extraStories.slice(0, targetNum - stories.length))
       }
     }
 
-    // Sort the keys, i.e. the words & return the top 10
+    // Get all the words from the titles
+    const words = stories.reduce((arr, story) => {
+      if (story.data.title !== undefined) {
+        return arr.concat(story.data.title.toLowerCase().split(' '))
+      }
+      return arr
+    }, [])
+
+    const wordsMap = words.reduce((dict, word) => {
+      if (!stopwords.includes(word)) {
+        dict[word] = (dict[word] || 0) + 1
+      }
+      return dict
+    }, {})
+
+    // Sort the key words & return the top 10
     const keysSorted = Object.keys(wordsMap).sort((a, b) => wordsMap[b] - wordsMap[a])
     const topWords = {}
     for (let i = 0; i < 10; i++) {
